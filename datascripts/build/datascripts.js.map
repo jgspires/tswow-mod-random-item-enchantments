@@ -1,1 +1,1 @@
-{"version":3,"sources":["../datascripts.ts"],"sourcesContent":["import { std } from \"wow/wotlk\";\n\nconsole.log(\"Hello from my-module data script!\");\n"],"names":["console","log"],"mappings":";;;;AAEAA,OAAO,CAACC,GAAG,CAAC,CAAmC"}
+{"version":3,"sources":["../datascripts.ts"],"names":[],"mappings":""}

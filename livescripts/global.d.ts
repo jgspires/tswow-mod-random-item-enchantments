@@ -7207,6 +7207,7 @@ declare class TSItem extends TSObject {
     IsNull() : bool
 
     UpdateItemSuffixFactor(): void
+    GetItemSuffixFactor(): uint32
     SetEnchantmentDuration(slot: EnchantmentSlot, duration: uint32): void
     SetEnchantmentCharges(slot: EnchantmentSlot, charges: uint32): void
     GetEnchantmentDuration(slot: EnchantmentSlot): TSNumber<uint32>
@@ -7555,6 +7556,13 @@ declare class TSItem extends TSObject {
      * @return bool enchantmentRemoved : if enchantment is successfully removed from specified (EnchantmentSlot)slot, returns 'true', otherwise 'false'
      */
     ClearEnchantment(slot : EnchantmentSlot) : bool
+
+    /**
+     * Sets the [Item]'s random property to the the given value.
+     * 
+     * @param propertyId : propertyID to set. Positive (>0) values point to random properties while negative values (<0) point to random suffixes.
+     */
+    SetRandomProperty(propertyId: int32): void
 
     /**
      * Saves the [Item] to the database
