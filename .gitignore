@@ -10,7 +10,7 @@ DBErrors.log
 GM.log
 *.conf.dist
 *_backup/
-Log.txt
+log.txt
 datascripts/build/*
 
 
