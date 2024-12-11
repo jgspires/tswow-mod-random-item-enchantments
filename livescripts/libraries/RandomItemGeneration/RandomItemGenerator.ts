@@ -145,6 +145,7 @@ class RandomItemGenerator {
     let neededRoll =
       qualityRollSettings.minRollForRarityUptier +
       itemQuality * qualityRollSettings.addMinRollPerRarity;
+      
     while (roll >= neededRoll && itemQuality != itemUtils.Quality.LEGENDARY) {
       itemQuality++;
       neededRoll += qualityRollSettings.addMinRollPerRarity;

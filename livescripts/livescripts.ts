@@ -6,13 +6,6 @@ export function Main(events: TSEvents) {
 
   events.Player.OnLogin(SendModuleStartMessage);
 
-  events.Item.OnUnequip((item, player, isSwap, result) => {});
-
-  // This is the one to use. The server does not support adding enchantments to lootItems.
-  events.Item.OnTakenAsLoot((item, lootItem, loot, player) => {
-    console.log("Item taken!");
-  });
-
   events.Creature.OnGenerateLoot((creature, player) => {
     const loot = creature.GetLoot();
     for (let i = 0; i < loot.GetItemCount(); i++) {

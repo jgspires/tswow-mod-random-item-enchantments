@@ -1,6 +1,6 @@
 type EnchantRollSettings = {
   enchantmentNeededRoll: number;
   extraNeededChancePerRoll: number;
-  maxRolls: number;
+  maxEnchants: number;
   enchantPointMultiplier: float;
 };

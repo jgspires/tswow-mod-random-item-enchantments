@@ -66,7 +66,7 @@ namespace EnchantManager {
     let neededRoll = rollSettings.enchantmentNeededRoll;
     let roll = random.getRandomChance();
 
-    while (roll >= neededRoll && enchantCount < rollSettings.maxRolls) {
+    while (roll >= neededRoll && enchantCount < rollSettings.maxEnchants) {
       enchantCount++;
       neededRoll += rollSettings.extraNeededChancePerRoll;
       roll = random.getRandomChance();

@@ -1,6 +1,6 @@
 const qualityRollSettings: QualityRollSettings = {
-  minRollForRarityUptier: 70,
-  addMinRollPerRarity: 3,
+  minRollForRarityUptier: 75,
+  addMinRollPerRarity: 5,
 };
 
 const enchantRollSettings = new Map<Lily.Item.Quality, EnchantRollSettings>([
@@ -9,7 +9,7 @@ const enchantRollSettings = new Map<Lily.Item.Quality, EnchantRollSettings>([
     {
       enchantmentNeededRoll: 90,
       extraNeededChancePerRoll: 101,
-      maxRolls: 1,
+      maxEnchants: 1,
       enchantPointMultiplier: 0.75,
     },
   ],
@@ -18,7 +18,7 @@ const enchantRollSettings = new Map<Lily.Item.Quality, EnchantRollSettings>([
     {
       enchantmentNeededRoll: 50,
       extraNeededChancePerRoll: 85,
-      maxRolls: 2,
+      maxEnchants: 2,
       enchantPointMultiplier: 1.0,
     },
   ],
@@ -27,7 +27,7 @@ const enchantRollSettings = new Map<Lily.Item.Quality, EnchantRollSettings>([
     {
       enchantmentNeededRoll: 10,
       extraNeededChancePerRoll: 40,
-      maxRolls: 3,
+      maxEnchants: 3,
       enchantPointMultiplier: 1.25,
     },
   ],
@@ -36,7 +36,7 @@ const enchantRollSettings = new Map<Lily.Item.Quality, EnchantRollSettings>([
     {
       enchantmentNeededRoll: 0,
       extraNeededChancePerRoll: 20,
-      maxRolls: 3,
+      maxEnchants: 3,
       enchantPointMultiplier: 1.5,
     },
   ],
@@ -45,7 +45,7 @@ const enchantRollSettings = new Map<Lily.Item.Quality, EnchantRollSettings>([
     {
       enchantmentNeededRoll: 0,
       extraNeededChancePerRoll: 0,
-      maxRolls: 3,
+      maxEnchants: 3,
       enchantPointMultiplier: 2.0,
     },
   ],
