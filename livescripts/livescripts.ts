@@ -1,7 +1,6 @@
 export function Main(events: TSEvents) {
   console.log("Random Item Enchantments Livescripts started!");
   EnchantPointCurve.generatePointCurve();
-  EnchantPointCurve.printPointCurve();
   const randomItemGenerator = new RandomItemGenerator();
 
   events.Player.OnLogin(SendModuleStartMessage);
