@@ -1,7 +1,12 @@
+import { Item } from "./libraries/lily-common/src";
+import { RandomItemGenerator, LIB_NAME } from "./libraries/lily-random-item-generation";
+import { EnchantPointCurve } from "./libraries/lily-random-item-generation/components/";
+
+const randomItemGenerator = new RandomItemGenerator();
+
 export function Main(events: TSEvents) {
-  console.log("Random Item Enchantments Livescripts started!");
+  console.log(`${LIB_NAME}: Livescripts started!`);
   EnchantPointCurve.generatePointCurve();
-  const randomItemGenerator = new RandomItemGenerator();
 
   events.Player.OnLogin(SendModuleStartMessage);
 
@@ -9,29 +14,45 @@ export function Main(events: TSEvents) {
     const loot = creature.GetLoot();
     for (let i = 0; i < loot.GetItemCount(); i++) {
       const currentLootItem = loot.GetItem(i);
-      const itemTemplate = currentLootItem.GetTemplate();
-      if (
-        itemTemplate.GetClass() == Lily.Item.Class.ITEM_CLASS_ARMOR ||
-        itemTemplate.GetClass() == Lily.Item.Class.ITEM_CLASS_WEAPON
-      ) {
-        console.log(
-          `Found equipment ${itemTemplate.GetName()}, will attempt to generate enchantments.`
-        );
-        const newItem = randomItemGenerator.createEnchantedItemFromItem(itemTemplate);
-        console.log(`newItem = ${newItem}`);
-
-        if (newItem == undefined) {
-          console.log("No enchantment added to item");
-        } else {
-          currentLootItem.SetItemID(newItem.GetEntry());
-          player?.SendItemQueryPacket(newItem);
-          console.log("Replaced loot item with newly created item!");
-        }
-      }
+      rollEnchantedItemFromLoot(currentLootItem, creature, player);
     }
   });
 }
 
+function rollEnchantedItemFromLoot(
+  lootItem: TSLootItem,
+  creature: TSCreature,
+  player?: TSPlayer
+) {
+  const itemTemplate = lootItem.GetTemplate();
+  if (
+    itemTemplate.GetClass() == Item.Class.ITEM_CLASS_ARMOR ||
+    itemTemplate.GetClass() == Item.Class.ITEM_CLASS_WEAPON
+  ) {
+    console.log(
+      `rollEnchantedItemFromLoot: Found equipment ${itemTemplate.GetName()}, will attempt to generate enchantments.`
+    );
+    const newItem = randomItemGenerator.createEnchantedItemFromItem(
+      itemTemplate,
+      creature
+    );
+
+    if (newItem) {
+      lootItem.SetItemID(newItem.GetEntry());
+      player?.SendItemQueryPacket(newItem);
+      console.log(
+        `rollEnchantedItemFromLoot: Replaced loot item ${itemTemplate.GetName()} with newly created item (${newItem.GetName()})!`
+      );
+    } else {
+      console.log(
+        `rollEnchantedItemFromLoot: No enchantments added to item ${itemTemplate.GetName()}. Skipping...`
+      );
+    }
+    console.log("rollEnchantedItemFromLoot: Finished attempt at item stat enchantment.");
+    console.log("--------------------------------------------");
+  }
+}
+
 function SendModuleStartMessage(player: TSPlayer, firstLogin: bool) {
-  player.SendBroadcastMessage("This server runs Lily's Random Item Enchantments module.");
+  player.SendBroadcastMessage(`This server runs Lily's Random Item Enchantments module.`);
 }
