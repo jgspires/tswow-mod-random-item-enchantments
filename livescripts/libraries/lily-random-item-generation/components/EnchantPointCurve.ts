@@ -51,11 +51,12 @@ export namespace EnchantPointCurve {
       console.warn(
         `${LIB_NAME}: Attempt to access enchant points at non-existent level: ${level}. Returning 0.`
       );
-      return { points: 0 };
+      return { points: 0, variance: 0 };
     }
     const varianceFactor = Random.getRandomInt(100 - variance, 100 + variance) / 100;
     return {
       points: Math.round(points * varianceFactor),
+      variance: varianceFactor,
       hasMaxVariance: varianceFactor === variance ? true : false,
     };
   }

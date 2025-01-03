@@ -1,1 +1,5 @@
-export type EnchantPointsAndVariance = { points: number; hasMaxVariance?: boolean };
+export type EnchantPointsAndVariance = {
+  points: number;
+  variance: number;
+  hasMaxVariance?: boolean;
+};

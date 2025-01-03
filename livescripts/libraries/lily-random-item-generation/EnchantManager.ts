@@ -1,7 +1,12 @@
 import { Random, Item, Creature } from "../lily-common/src";
 import { StatUtils } from "./components";
 import { EnchantPointCurve } from "./components/EnchantPointCurve";
-import { CustomStat, EnchantGenResult, ItemClassPair } from "./components/types";
+import {
+  CustomStat,
+  EnchantGenResult,
+  EnchantPointsAndVariance,
+  ItemClassPair,
+} from "./components/types";
 import {
   enchantRollSettings,
   enchantStatSettings,
@@ -31,7 +36,9 @@ export class EnchantManager {
       class: item.GetClass(),
       subclass: item.GetSubClass(),
     };
-    const totalPointsAndVariance = EnchantPointCurve.getPoints(item.GetItemLevel());
+    const totalPointsAndVariance: EnchantPointsAndVariance = EnchantPointCurve.getPoints(
+      item.GetItemLevel()
+    );
     const totalPoints = totalPointsAndVariance.points * pointMultiplier;
 
     const enchantCount = this.rollForEnchantCount(
@@ -47,7 +54,9 @@ export class EnchantManager {
     }
 
     console.log(
-      `generateEnchantments: Generating ${enchantCount} enchantment(s) for item ${item.GetName()}. Quality = ${item.GetQuality()}. Total points = ${totalPoints}`
+      `generateEnchantments: Generating ${enchantCount} enchantment(s) for item ${item.GetName()}. Quality = ${item.GetQuality()}. Total points = ${totalPoints}. Variance factor = ${
+        totalPointsAndVariance.variance
+      }.`
     );
 
     const statValues: number[] = StatUtils.distributeStatsRandomlyWithMinimum(
@@ -87,7 +96,7 @@ export class EnchantManager {
       const statMultiplier = this.getStatMultiplierForItem(statSettings, itemClassPair);
       const value = Math.round(statValues[i] * statMultiplier);
       console.log(
-        `Stat value = ${statValues[i]}. Multiplier = ${statMultiplier}. Final value = ${value}`
+        `generateEnchantments: Stat value = ${statValues[i]}. Multiplier = ${statMultiplier}. Final value = ${value}`
       );
       console.log(
         `generateEnchantments: Pushing final stat enchantment Stat|Value: (${stat}|${value}) to item ${item.GetName()}.`
@@ -158,7 +167,7 @@ export class EnchantManager {
       );
       if (enchantCount >= rollSettings.maxEnchants) {
         console.log(
-          ` rollForEnchantCount: Max enchantments reached for quality ${quality}. Breaking...`
+          `rollForEnchantCount: Max enchantments reached for quality ${quality}. Breaking...`
         );
         break;
       }
