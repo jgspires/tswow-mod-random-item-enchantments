@@ -111,6 +111,9 @@ export class EnchantManager {
     const hasMaxVariance = totalPointsAndVariance.hasMaxVariance || false;
     const isPerfect = this.isItemPerfect(item.GetQuality(), enchantments, hasMaxVariance);
 
+    if (isPerfect)
+      console.log(`generateEnchantments: Item ${item.GetName()} is perfect!`);
+
     return {
       enchantments,
       isPerfect,
