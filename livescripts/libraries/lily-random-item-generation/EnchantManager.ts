@@ -9,13 +9,18 @@ import {
 } from "./components/types";
 import {
   enchantRollSettings,
-  enchantStatSettings,
   creatureRankBonuses,
+  StatSettingsManager,
 } from "./settings";
-import { EnchantmentStatSettings } from "./settings/types";
+import { StatMultiplierSettings, StatSettings } from "./settings/types";
 
 export class EnchantManager {
   static MIN_ENCHANTMENT_VALUE = 0;
+  private statSettingsManager: StatSettingsManager;
+
+  constructor() {
+    this.statSettingsManager = StatSettingsManager.getInstance();
+  }
 
   public generateEnchantments(
     item: TSItemTemplate,
@@ -48,13 +53,17 @@ export class EnchantManager {
 
     if (enchantCount == 0) {
       console.log(
-        `generateEnchantments: Item ${item.GetName()} (Quality = ${item.GetQuality()}) rolled 0 enchantments. Aborting generation.`
+        `generateEnchantments: Item ${item.GetName()} (Quality = ${
+          Item.Quality[item.GetQuality()]
+        }) rolled 0 enchantments. Aborting generation.`
       );
       return { enchantments: [] };
     }
 
     console.log(
-      `generateEnchantments: Generating ${enchantCount} enchantment(s) for item ${item.GetName()}. Quality = ${item.GetQuality()}. Total points = ${totalPoints}. Variance factor = ${
+      `generateEnchantments: Generating ${enchantCount} enchantment(s) for item ${item.GetName()}. Quality = ${
+        Item.Quality[item.GetQuality()]
+      }. Total points = ${totalPoints}. Variance factor = ${
         totalPointsAndVariance.variance
       }.`
     );
@@ -65,7 +74,7 @@ export class EnchantManager {
       EnchantManager.MIN_ENCHANTMENT_VALUE
     );
 
-    const pickedStats: number[] = this.pickRandomStats(
+    const pickedStats: number[] = this.pickRandomStatsForItem(
       enchantCount,
       itemClassPair,
       false
@@ -77,15 +86,15 @@ export class EnchantManager {
       return { enchantments: [] };
     }
 
-    // Push the picked stats and their values to the enchantment list of the item.
     console.log(
       `generateEnchantments: pushing stat enchantments for item ${item.GetName()}. Stat count = ${
         pickedStats.length
       }. Enchant count = ${enchantCount}`
     );
+    // Push the picked stats and their values to the enchantment list of the item.
     for (let i = 0; i < enchantCount; i++) {
       const stat = pickedStats[i];
-      const statSettings = enchantStatSettings.get(stat);
+      const statSettings = this.statSettingsManager.getSettingsForStat(stat);
       if (!statSettings) {
         console.log(
           `generateEnchantments: No stat settings found for stat ${stat}. Skipping...`
@@ -93,7 +102,11 @@ export class EnchantManager {
         continue;
       }
 
-      const statMultiplier = this.getStatMultiplierForItem(statSettings, itemClassPair);
+      const statMultiplier = this.getStatMultiplierForItem(
+        statSettings.multipliers,
+        itemClassPair
+      );
+
       const value = Math.round(statValues[i] * statMultiplier);
       console.log(
         `generateEnchantments: Stat value = ${statValues[i]}. Multiplier = ${statMultiplier}. Final value = ${value}`
@@ -206,18 +219,18 @@ export class EnchantManager {
    * @param statSettings Stat settings map to use for picking stats.
    * @returns `number[]` - Array of picked stat keys.
    */
-  private pickRandomStats(
+  private pickRandomStatsForItem(
     statCount: number,
     itemClassPair: ItemClassPair,
-    allowRepeats: boolean = false,
-    statSettings: Map<Item.Stat, EnchantmentStatSettings> = enchantStatSettings
+    allowRepeats: boolean = false
   ): number[] {
-    if (statSettings.size === 0) {
+    const statList: Item.Stat[] = this.statSettingsManager.getStatList();
+    if (statList.length === 0) {
       console.log(`pickRandomStats: No stat settings found. Returning empty array.`);
       return [];
     }
 
-    if (!allowRepeats && statCount > statSettings.size) {
+    if (!allowRepeats && statCount > statList.length) {
       console.log(
         `pickRandomStats: Requested stats exceed available stats without repeats. Returning empty array.`
       );
@@ -225,13 +238,12 @@ export class EnchantManager {
     }
 
     const pickedStats: number[] = [];
-    const localStatSettings = allowRepeats ? statSettings : new Map(statSettings);
 
     for (let i = 0; i < statCount; i++) {
-      const pickedStatKey = this.pickRandomStat(itemClassPair, localStatSettings);
+      const pickedStatKey = this.pickRandomStatForItem(itemClassPair, statList);
       if (pickedStatKey === null) break; // Stop if no valid stats are left.
       pickedStats.push(pickedStatKey);
-      if (!allowRepeats) localStatSettings.delete(pickedStatKey);
+      if (!allowRepeats) statList.splice(pickedStatKey, 1);
     }
 
     return pickedStats;
@@ -244,24 +256,28 @@ export class EnchantManager {
    * @param statSettings Stat settings map to use for picking stats.
    * @returns `number | null` - Picked stat key or null if no valid stats are found.
    */
-  private pickRandomStat(
+  private pickRandomStatForItem(
     itemClassPair: ItemClassPair,
-    statSettings: Map<Item.Stat, EnchantmentStatSettings> = enchantStatSettings
+    statList: Item.Stat[]
   ): number | null {
-    if (statSettings.size === 0) {
+    if (statList.length === 0) {
       console.log(`pickRandomStat: No stat settings found. Returning null.`);
       return null;
     }
 
-    const statSettingsKeys = Array.from(statSettings.keys());
-    while (statSettingsKeys.length > 0) {
-      const randomIndex = Random.getRandomInt(0, statSettingsKeys.length - 1);
-      const pickedStatKey = statSettingsKeys[randomIndex];
-      const pickedStatSettings = statSettings.get(pickedStatKey);
+    const localStatList: Item.Stat[] = Array(...statList);
+
+    while (localStatList.length > 0) {
+      const randomIndex = Random.getRandomInt(0, localStatList.length - 1);
+      const pickedStatKey = localStatList[randomIndex];
+      const pickedStatSettings =
+        this.statSettingsManager.getSettingsForStat(pickedStatKey);
 
       if (!pickedStatSettings) {
-        console.log(`pickRandomStat: Invalid stat ${pickedStatKey}. Skipping.`);
-        statSettingsKeys.splice(randomIndex, 1); // Remove invalid stat.
+        console.log(
+          `pickRandomStat: non-existent settings for stat ${Item.Stat[pickedStatKey]}. Skipping...`
+        );
+        localStatList.splice(randomIndex, 1); // Remove invalid stat.
         continue;
       }
 
@@ -269,8 +285,14 @@ export class EnchantManager {
         return pickedStatKey;
       }
 
-      console.log(`pickRandomStat: Stat ${pickedStatKey} is not valid. Skipping.`);
-      statSettingsKeys.splice(randomIndex, 1); // Remove invalid stat.
+      console.log(
+        `pickRandomStat: Stat ${
+          Item.Stat[pickedStatKey]
+        } is not valid for item Class|Subclass pair (${Item.Class[itemClassPair.class]}|${
+          Item.Subclass[itemClassPair.subclass]
+        }). Skipping...`
+      );
+      localStatList.splice(randomIndex, 1); // Remove invalid stat.
     }
 
     console.log(`pickRandomStat: No valid stats found. Returning null.`);
@@ -278,7 +300,7 @@ export class EnchantManager {
   }
 
   private statIsValidForItem(
-    enchantStatSettings: EnchantmentStatSettings,
+    enchantStatSettings: StatSettings,
     itemClassPair: ItemClassPair
   ): boolean {
     // If stat has no classRequirements, return the stat as any equip type is allowed.
@@ -304,26 +326,29 @@ export class EnchantManager {
   }
 
   private getStatMultiplierForItem(
-    statSettings: EnchantmentStatSettings,
+    statSettings: StatMultiplierSettings,
     itemClassPair: ItemClassPair
   ): number {
+    const itemClassMultiplier =
+      this.statSettingsManager.getStatMultiplierForItemClass(itemClassPair);
+    let chosenMultiplier = statSettings.baseMultiplier;
+
     if (
-      !statSettings.multiplierOverrides ||
-      statSettings.multiplierOverrides.length === 0
-    )
-      return statSettings.multiplier;
-
-    const multiplierOverride = statSettings.multiplierOverrides.find((value) => {
-      if (value.class === itemClassPair.class) {
-        if (value.subclasses && value.subclasses.length > 0) {
-          return value.subclasses.includes(itemClassPair.subclass);
+      statSettings.classMultiplierOverrides &&
+      statSettings.classMultiplierOverrides.length > 0
+    ) {
+      const multiplierOverride = statSettings.classMultiplierOverrides.find((value) => {
+        if (value.class === itemClassPair.class) {
+          if (value.subclasses && value.subclasses.length > 0) {
+            return value.subclasses.includes(itemClassPair.subclass);
+          }
+          return true;
         }
-        return true;
-      }
-    });
+      });
 
-    if (!multiplierOverride) return statSettings.multiplier;
+      if (multiplierOverride) chosenMultiplier = multiplierOverride.overrideMultiplier;
+    }
 
-    return multiplierOverride.overrideMultiplier;
+    return chosenMultiplier * itemClassMultiplier;
   }
 }

@@ -1,4 +1,4 @@
-export type QualityRoll = {
+export type QualityUptierSettings = {
   minRollForRarityUptier: number;
   addMinRollPerRarity: number;
 };

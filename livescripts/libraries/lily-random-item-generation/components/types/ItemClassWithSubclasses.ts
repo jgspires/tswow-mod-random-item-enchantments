@@ -1,6 +1,6 @@
 import { Item } from "../../../lily-common/src/Item";
 
-export type ItemClassPair = {
+export type ItemClassWithSubclasses = {
   class: Item.Class;
-  subclass: Item.Subclass;
+  subclasses: Item.Subclass[];
 };

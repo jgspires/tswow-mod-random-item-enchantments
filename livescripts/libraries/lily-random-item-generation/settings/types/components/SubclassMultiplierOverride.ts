@@ -1,7 +1,7 @@
 import { Item } from "../../../../lily-common/src/Item";
 
-export type MultiplierOverrides = {
+export type ClassMultiplierOverride = {
   class: Item.Class;
-  subclasses?: Item.SubClass[];
+  subclasses?: Item.Subclass[];
   overrideMultiplier: number;
 };

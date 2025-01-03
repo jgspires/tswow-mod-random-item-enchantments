@@ -3,7 +3,7 @@ import { EnchantmentNameList } from "./types";
 
 export const PERFECT_ITEM_PREFIX = "Perfect";
 
-export const enchantNames: Record<number, EnchantmentNameList> = {
+export const enchantAffixNames: Record<number, EnchantmentNameList> = {
   [Item.Stat.MANA]: {
     prefixes: ["Energized", "Mana-Infused", "Arcane"],
     suffixes: ["of Manastorm", "of the Magi", "of the Sorcerer"],

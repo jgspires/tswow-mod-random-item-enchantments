@@ -1,73 +1,9 @@
 import { Item, Creature } from "../../lily-common/src";
 import {
-  EnchantmentStatSettings,
   CreatureRankSettings,
-  QualityRoll,
+  QualityUptierSettings,
   EnchantmentRollSettings,
 } from "./types";
-
-/**
- * Set of stats that can be enchanted/added on items.
- * New stats can be added here.
- *
- * If you want specific multipliers or item class requirements for a stat, add it to the `initStatSettings` function.
- */
-export const enchantStatSet = new Set<Item.Stat>([
-  Item.Stat.HEALTH,
-  Item.Stat.MANA,
-  Item.Stat.AGILITY,
-  Item.Stat.STRENGTH,
-  Item.Stat.INTELLECT,
-  Item.Stat.SPIRIT,
-  Item.Stat.STAMINA,
-  Item.Stat.BLOCK_RATING,
-  Item.Stat.BLOCK_VALUE,
-  Item.Stat.CRIT_RATING,
-]);
-
-export const enchantStatSettings = new Map<Item.Stat, EnchantmentStatSettings>();
-initStatSettings();
-
-function initStatSettings() {
-  const enchantStatList = Array.from(enchantStatSet);
-  for (const stat of enchantStatList) {
-    if (enchantStatSettings.has(stat)) continue;
-    switch (stat) {
-      case Item.Stat.HEALTH:
-      case Item.Stat.MANA:
-        enchantStatSettings.set(stat, { multiplier: 10 });
-        break;
-      case Item.Stat.BLOCK_RATING:
-      case Item.Stat.BLOCK_VALUE:
-        enchantStatSettings.set(stat, {
-          multiplier: 1,
-          requirements: [
-            {
-              classRequirement: Item.Class.ITEM_CLASS_ARMOR,
-              subclassRequirements: [Item.SubClass.ARMOR_SHIELD],
-            },
-          ],
-          multiplierOverrides: [
-            {
-              class: Item.Class.ITEM_CLASS_ARMOR,
-              subclasses: [Item.SubClass.ARMOR_SHIELD],
-              overrideMultiplier: 5,
-            },
-          ],
-        });
-        break;
-      case Item.Stat.CRIT_RATING:
-        enchantStatSettings.set(stat, {
-          multiplier: 1,
-          requirements: [{ classRequirement: Item.Class.ITEM_CLASS_WEAPON }],
-        });
-        break;
-      default:
-        enchantStatSettings.set(stat, { multiplier: 1 });
-        break;
-    }
-  }
-}
 
 /**
  * Roll multipliers for item generation based on creature rank.
@@ -111,7 +47,7 @@ export const creatureRankBonuses = new Map<Creature.Rank, CreatureRankSettings>(
   ],
 ]);
 
-export const qualityRollSettings: QualityRoll = {
+export const qualityUptierSettings: QualityUptierSettings = {
   minRollForRarityUptier: 75,
   addMinRollPerRarity: 5,
 };

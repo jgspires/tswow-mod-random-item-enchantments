@@ -1,13 +1,14 @@
 import { Item, Random, Creature } from "../lily-common/src";
 import { MinHeap } from "../lily-common/src/data-structures";
+import { Logger } from "../lily-common/src/utils";
 import { StatUtils } from "./components";
 import { CustomStat } from "./components/types";
 import { EnchantManager } from "./EnchantManager";
 import {
   enchantRollSettings,
   PERFECT_ITEM_PREFIX,
-  enchantNames,
-  qualityRollSettings,
+  enchantAffixNames,
+  qualityUptierSettings,
   creatureRankBonuses,
 } from "./settings";
 import { EnchantmentRollSettings } from "./settings/types";
@@ -19,6 +20,8 @@ export class RandomItemGenerator {
   maxID: number;
   itemQualitySettings: Map<Item.Quality, EnchantmentRollSettings>;
 
+  private logger: Logger;
+
   static ITEM_CREATION_ID_START = 100000;
 
   constructor() {
@@ -27,6 +30,7 @@ export class RandomItemGenerator {
     this.freeIDs = new MinHeap();
     this.usedIDs = new Set<number>();
     this.itemQualitySettings = enchantRollSettings;
+    this.logger = new Logger("RandomItemGenerator");
     this.setupAndCleanIDs();
     this.cleanUpItems();
   }
@@ -48,7 +52,9 @@ export class RandomItemGenerator {
     newTemplate.SetQuality(quality);
 
     console.log(
-      `createEnchantedItemFromItem: Item ${existingTemp.GetName()}: Item class = ${existingTemp.GetClass()}, Item subclass = ${existingTemp.GetSubClass()}`
+      `createEnchantedItemFromItem: Item ${existingTemp.GetName()}: Item class = ${
+        Item.Class[existingTemp.GetClass()]
+      }, Item subclass = ${Item.Subclass[existingTemp.GetSubClass()]}`
     );
     if (this.attemptToGenEnchantments(newTemplate, creature) == 0) {
       console.log(
@@ -139,15 +145,15 @@ export class RandomItemGenerator {
       if (addedStatOrUndef) {
         console.log(
           `addOrUpdateCustomStats: Sucessfully added or updated stat ${
-            customStat.stat
-          } with value of ${customStat.value} to item ${item.GetName()}.`
+            Item.Stat[customStat.stat]
+          }. Value = ${customStat.value}. to item ${item.GetName()}.`
         );
         addedStats.push(addedStatOrUndef);
       } else
         console.warn(
-          `addOrUpdateCustomStats: Could not add stat ${
+          `addOrUpdateCustomStats: Could not add stat ${Item.Stat[customStat.stat]} (${
             customStat.stat
-          } to item ${item.GetName()}.`
+          }) to item ${item.GetName()}.`
         );
     }
     return addedStats;
@@ -201,11 +207,17 @@ export class RandomItemGenerator {
 
   private getRandomAffixName(stat: number, suffix: boolean = false): string {
     if (!suffix) {
-      const prefixIndex = Random.getRandomInt(0, enchantNames[stat].prefixes.length - 1);
-      return enchantNames[stat].prefixes[prefixIndex];
+      const prefixIndex = Random.getRandomInt(
+        0,
+        enchantAffixNames[stat].prefixes.length - 1
+      );
+      return enchantAffixNames[stat].prefixes[prefixIndex];
     } else {
-      const suffixIndex = Random.getRandomInt(0, enchantNames[stat].suffixes.length - 1);
-      return enchantNames[stat].suffixes[suffixIndex];
+      const suffixIndex = Random.getRandomInt(
+        0,
+        enchantAffixNames[stat].suffixes.length - 1
+      );
+      return enchantAffixNames[stat].suffixes[suffixIndex];
     }
   }
 
@@ -220,40 +232,40 @@ export class RandomItemGenerator {
     // Legendaries, artifacts, and heirlooms keep their rarity.
     if (itemQuality >= Item.Quality.LEGENDARY) return itemQuality;
 
-    console.log("rollForQuality: starting...");
+    this.logger.debug("rollForQuality: starting...");
 
     const creatureTemplate = creature.GetTemplate();
     const rollMultiplier = this.qualityRollMultiplierForRank(creatureTemplate.GetRank());
 
-    console.log(
+    this.logger.debug(
       `rollForQuality: Creature rank = ${creatureTemplate.GetRank()}. Rank Roll multiplier = ${rollMultiplier}`
     );
 
     let roll = Random.getRandomChance();
-    console.log(`rollForQuality: Base Roll = ${roll}`);
+    this.logger.debug(`rollForQuality: Base Roll = ${roll}`);
 
     let neededRoll =
-      qualityRollSettings.minRollForRarityUptier +
-      itemQuality * qualityRollSettings.addMinRollPerRarity;
+      qualityUptierSettings.minRollForRarityUptier +
+      itemQuality * qualityUptierSettings.addMinRollPerRarity;
 
     roll = Math.round(roll * rollMultiplier);
 
-    console.log(
+    this.logger.debug(
       `rollForQuality: Final Roll = ${roll}. Roll multiplier = ${rollMultiplier}. Needed Roll = ${neededRoll}. Current Quality = ${itemQuality}`
     );
 
     while (roll >= neededRoll && itemQuality < Item.Quality.LEGENDARY) {
-      console.log(
+      this.logger.debug(
         `rollForQuality: Roll successful! Quality upgraded from current Quality = ${itemQuality} to ${
           itemQuality + 1
         }`
       );
       itemQuality++;
-      neededRoll += qualityRollSettings.addMinRollPerRarity;
+      neededRoll += qualityUptierSettings.addMinRollPerRarity;
       roll = Random.getRandomChance();
 
       roll = Math.round(roll * rollMultiplier);
-      console.log(
+      this.logger.debug(
         `rollForQuality: Roll = ${roll}. Roll multiplier = ${rollMultiplier}. Needed Roll = ${neededRoll}`
       );
     }
@@ -275,15 +287,15 @@ export class RandomItemGenerator {
     let newID: number;
 
     if (!this.freeIDs.isEmpty()) {
-      console.log("createNewId: Free IDs heap not empty. Reusing free ID...");
+      this.logger.debug("createNewId: Free IDs heap not empty. Reusing free ID...");
       newID = this.freeIDs.pop(); // Reuse the lowest free ID
-      console.log("createNewId: Reused free ID = " + newID);
+      this.logger.debug("createNewId: Reused free ID = " + newID);
     } else {
-      console.log(
+      this.logger.debug(
         "createNewId: Free IDs heap empty. Creating new ID from current maxID..."
       );
       newID = this.maxID + 1;
-      console.log("createNewId: New ID = " + newID);
+      this.logger.debug("createNewId: New ID = " + newID);
       this.maxID = newID;
     }
 
@@ -331,11 +343,11 @@ export class RandomItemGenerator {
 
     const idsInUse = new Set(this.getIDsInUseFromDB());
 
-    console.log(`setupAndCleanIDs: Ids in Use length = ${idsInUse.size}`);
+    this.logger.debug(`setupAndCleanIDs: Ids in Use length = ${idsInUse.size}`);
 
     for (let i = RandomItemGenerator.ITEM_CREATION_ID_START; i <= this.maxID; i++) {
       if (!idsInUse.has(i)) {
-        console.log(`setupAndCleanIDs: Reclaiming unused id ${i}`);
+        this.logger.debug(`setupAndCleanIDs: Reclaiming unused id ${i}`);
         this.freeIDs.push(i);
       }
     }
