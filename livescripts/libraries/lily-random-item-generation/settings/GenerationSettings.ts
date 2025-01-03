@@ -84,28 +84,28 @@ export const creatureRankBonuses = new Map<Creature.Rank, CreatureRankSettings>(
   [
     Creature.Rank.ELITE,
     {
-      qualityRollMultiplier: 1.5,
+      qualityRollMultiplier: 1.2,
       enchantRollBonus: 25,
     },
   ],
   [
     Creature.Rank.RARE_ELITE,
     {
-      qualityRollMultiplier: 1.75,
+      qualityRollMultiplier: 1.25,
       enchantRollBonus: 35,
     },
   ],
   [
     Creature.Rank.BOSS,
     {
-      qualityRollMultiplier: 2.0,
+      qualityRollMultiplier: 1.35,
       enchantRollBonus: 50,
     },
   ],
   [
     Creature.Rank.RARE,
     {
-      qualityRollMultiplier: 1.25,
+      qualityRollMultiplier: 1.1,
       enchantRollBonus: 15,
     },
   ],
