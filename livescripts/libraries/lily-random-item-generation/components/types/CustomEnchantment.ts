@@ -1,4 +1,6 @@
+import { Item } from "../../../lily-common/src/Item";
+
 export type CustomStat = {
-  stat: number;
+  stat: Item.Stat;
   value: number;
 };
