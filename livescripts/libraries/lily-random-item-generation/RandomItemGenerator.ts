@@ -13,8 +13,9 @@ import {
 import { EnchantmentRollSettings } from "./settings/types";
 
 export class RandomItemGenerator {
-  usedIDs: Set<number>;
+  enchantManager: EnchantManager;
   freeIDs: MinHeap;
+  usedIDs: Set<number>;
   maxID: number;
   itemQualitySettings: Map<Item.Quality, EnchantmentRollSettings>;
 
@@ -22,6 +23,7 @@ export class RandomItemGenerator {
 
   constructor() {
     this.maxID = RandomItemGenerator.ITEM_CREATION_ID_START - 1;
+    this.enchantManager = new EnchantManager();
     this.freeIDs = new MinHeap();
     this.usedIDs = new Set<number>();
     this.itemQualitySettings = enchantRollSettings;
@@ -71,7 +73,7 @@ export class RandomItemGenerator {
    * @returns `number` - The amount of successfully added enchantments.
    */
   private attemptToGenEnchantments(item: TSItemTemplate, creature: TSCreature): number {
-    const enchantGenResult = EnchantManager.generateEnchantments(item, creature);
+    const enchantGenResult = this.enchantManager.generateEnchantments(item, creature);
     const enchantsToAdd = enchantGenResult.enchantments;
 
     if (enchantsToAdd.length == 0) return 0;
@@ -82,7 +84,7 @@ export class RandomItemGenerator {
     // So enchantments are not rolled and lost...
     if (freeEnchantSlots == 0) {
       console.log(
-        `attemptAddStatsToItem: Item ${item.GetName()} already has ${
+        `attemptToGenEnchantments: Item ${item.GetName()} already has ${
           StatUtils.MAX_ITEM_STATS
         } stats. Cannot add more. Only existing stats will be modified.`
       );
@@ -90,11 +92,11 @@ export class RandomItemGenerator {
 
     if (freeEnchantSlots < enchantsToAdd.length) {
       console.log(
-        `attemptAddStatsToItem: Item ${item.GetName()} has ${freeEnchantSlots} free slots, but ${
+        `attemptToGenEnchantments: Item ${item.GetName()} has ${freeEnchantSlots} free slots, but ${
           enchantsToAdd.length
         } enchantments were rolled. ${
           enchantsToAdd.length - freeEnchantSlots
-        } enchantment(s) will be potentially not applied. If it is an existing one it will increment its value.`
+        } enchantment(s) will be potentially not applied. If it is an existing one its value will be incremented.`
       );
     }
 
@@ -110,7 +112,7 @@ export class RandomItemGenerator {
 
     if (successfulEnchants.length < enchantsToAdd.length)
       console.warn(
-        `AttemptToGenEnchantments: Could not add all enchantments to item with template of entry ${item.GetEntry()} (${item.GetName()}).
+        `attemptToGenEnchantments: Could not add all enchantments to item with template of entry ${item.GetEntry()} (${item.GetName()}).
         Total rolled enchantments were ${enchantsToAdd.length}. Added enchantments: ${
           successfulEnchants.length
         }`
@@ -130,20 +132,20 @@ export class RandomItemGenerator {
     item: TSItemTemplate,
     customStats: CustomStat[]
   ): CustomStat[] {
-    console.log("addOrUpdateStats: Starting...");
+    console.log("addOrUpdateCustomStats: Starting...");
     const addedStats: CustomStat[] = [];
     for (const customStat of customStats) {
       const addedStatOrUndef = StatUtils.addOrUpdateStat(item, customStat);
       if (addedStatOrUndef) {
         console.log(
-          `addOrUpdateStats: Sucessfully added or updated stat ${
+          `addOrUpdateCustomStats: Sucessfully added or updated stat ${
             customStat.stat
-          } with final value of ${customStat.value} to item ${item.GetName()}.`
+          } with value of ${customStat.value} to item ${item.GetName()}.`
         );
         addedStats.push(addedStatOrUndef);
       } else
         console.warn(
-          `addOrUpdateStats: Could not add stat ${
+          `addOrUpdateCustomStats: Could not add stat ${
             customStat.stat
           } to item ${item.GetName()}.`
         );

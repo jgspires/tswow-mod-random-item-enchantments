@@ -65,4 +65,88 @@ export class StatUtils {
     }
     return -1;
   }
+
+  /**
+   * Distributes a power pool among a number of enchantments, ensuring each enchantment receives at least a minimum value.
+   *
+   * @param valuePool - The total power pool to distribute.
+   * @param enchantmentCount - The number of enchantments to distribute the power among.
+   * @param minValue - The minimum value each enchantment should receive.
+   * @returns `number[]` - An array of values representing the distributed power among the enchantments
+   */
+  static distributeStatsRandomlyWithMinimum(
+    valuePool: number,
+    enchantmentCount: number,
+    minValue: number
+  ): number[] {
+    if (minValue * enchantmentCount > valuePool) {
+      console.log("Not enough pool to allocate the minimum value to each enchantment.");
+      return [];
+    }
+
+    // Step 1: Allocate the minimum value to each enchantment
+    const base = Array.from({ length: enchantmentCount }, () => minValue);
+    const remainingPool = valuePool - minValue * enchantmentCount;
+
+    // Step 2: Randomly distribute the remaining pool
+    const randomDistribution = this.randomlyDistributeStats(
+      remainingPool,
+      enchantmentCount
+    );
+
+    // Step 3: Combine the base values with the random distribution
+    const distributed = base.map((val, i) => val + randomDistribution[i]);
+
+    // Step 4: Ensure no enchantment gets exactly zero unless compensated
+    let zeroCount = distributed.filter((val) => val === 0).length;
+
+    if (zeroCount > 0) {
+      for (let i = 0; i < enchantmentCount; i++) {
+        if (distributed[i] === 0) {
+          // Find the first non-zero value to transfer 1 unit
+          for (let j = 0; j < enchantmentCount; j++) {
+            if (distributed[j] > 1) {
+              distributed[j]--;
+              distributed[i]++;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    return distributed;
+  }
+
+  /**
+   * Distributes a value pool among a number of enchantments.
+   *
+   * @param valuePool - The total value to distribute.
+   * @param enchantmentCount - The number of enchantments amongst which to distribute the value.
+   * @returns `number[]` - An array of values representing the distributed value among the enchantments.
+   */
+  private static randomlyDistributeStats(
+    valuePool: number,
+    enchantmentCount: number
+  ): number[] {
+    const partitions = Array.from({ length: enchantmentCount - 1 }, () =>
+      Math.random()
+    ).sort((a, b) => a - b);
+
+    partitions.unshift(0);
+    partitions.push(1);
+
+    const distributed = [];
+    for (let i = 0; i < enchantmentCount; i++) {
+      const value = Math.round(valuePool * (partitions[i + 1] - partitions[i]));
+      distributed.push(value);
+    }
+
+    const total = distributed.reduce((sum, value) => sum + value, 0);
+    if (total !== valuePool) {
+      distributed[0] += valuePool - total;
+    }
+
+    return distributed;
+  }
 }
