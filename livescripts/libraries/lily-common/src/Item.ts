@@ -1,6 +1,6 @@
 export namespace Item {
   /** Mimics item class enum from tswow's (TrinityCore's) source code. */
-  export const enum Class {
+  export enum Class {
     ITEM_CLASS_CONSUMABLE = 0,
     ITEM_CLASS_CONTAINER = 1,
     ITEM_CLASS_WEAPON = 2,
@@ -25,7 +25,7 @@ export namespace Item {
    * All `Subclasses` are matched with a `Class`.
    * `Subclass` enum names also contain the `Class` name for clarity.
    */
-  export enum SubClass {
+  export enum Subclass {
     CONSUMABLE_CONSUMABLE = 0,
     CONSUMABLE_POTION = 1,
     CONSUMABLE_ELIXIR = 2,
@@ -146,7 +146,7 @@ export namespace Item {
   }
 
   /** Mimics item quality enum from tswow's (TrinityCore's) source code. */
-  export const enum Quality {
+  export enum Quality {
     POOR = 0, //GREY
     NORMAL = 1, //WHITE
     UNCOMMON = 2, //GREEN
@@ -158,7 +158,7 @@ export namespace Item {
   }
 
   /** Mimics ItemModType enum from tswow's (TrinityCore's) source code. */
-  export const enum Stat {
+  export enum Stat {
     MANA = 0,
     HEALTH = 1,
     AGILITY = 3,
