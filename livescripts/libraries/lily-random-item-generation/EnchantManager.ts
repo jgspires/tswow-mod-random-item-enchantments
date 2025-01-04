@@ -1,4 +1,5 @@
 import { Random, Item, Creature } from "../lily-common/src";
+import { Logger } from "../lily-common/src/utils";
 import { StatUtils } from "./components";
 import { EnchantPointCurve } from "./components/EnchantPointCurve";
 import {
@@ -17,9 +18,11 @@ import { StatMultiplierSettings, StatSettings } from "./settings/types";
 export class EnchantManager {
   static MIN_ENCHANTMENT_VALUE = 0;
   private statSettingsManager: StatSettingsManager;
+  private logger: Logger;
 
   constructor() {
     this.statSettingsManager = StatSettingsManager.getInstance();
+    this.logger = new Logger("EnchantManager");
   }
 
   public generateEnchantments(
@@ -31,7 +34,7 @@ export class EnchantManager {
       item.GetQuality()
     )?.enchantPointMultiplier;
     if (pointMultiplier == undefined) {
-      console.log(
+      this.logger.error(
         `generateEnchantments: Item ${item.GetName()} (Quality = ${item.GetQuality()}) Has no point multiplier. Aborting generation.`
       );
       return { enchantments: [] };
@@ -52,7 +55,7 @@ export class EnchantManager {
     );
 
     if (enchantCount == 0) {
-      console.log(
+      this.logger.error(
         `generateEnchantments: Item ${item.GetName()} (Quality = ${
           Item.Quality[item.GetQuality()]
         }) rolled 0 enchantments. Aborting generation.`
@@ -60,10 +63,10 @@ export class EnchantManager {
       return { enchantments: [] };
     }
 
-    console.log(
+    this.logger.debug(
       `generateEnchantments: Generating ${enchantCount} enchantment(s) for item ${item.GetName()}. Quality = ${
         Item.Quality[item.GetQuality()]
-      }. Total points = ${totalPoints}. Variance factor = ${
+      }. Total points = ${totalPoints}. Rarity Multiplier = ${pointMultiplier}. Variance factor = ${
         totalPointsAndVariance.variance
       }.`
     );
@@ -77,16 +80,16 @@ export class EnchantManager {
     const pickedStats: number[] = this.pickRandomStatsForItem(
       enchantCount,
       itemClassPair,
-      false
+      true
     );
     if (pickedStats.length === 0) {
-      console.log(
+      this.logger.error(
         `generateEnchantments: No valid stats picked for item ${item.GetName()}. Aborting generation.`
       );
       return { enchantments: [] };
     }
 
-    console.log(
+    this.logger.debug(
       `generateEnchantments: pushing stat enchantments for item ${item.GetName()}. Stat count = ${
         pickedStats.length
       }. Enchant count = ${enchantCount}`
@@ -96,7 +99,7 @@ export class EnchantManager {
       const stat = pickedStats[i];
       const statSettings = this.statSettingsManager.getSettingsForStat(stat);
       if (!statSettings) {
-        console.log(
+        this.logger.error(
           `generateEnchantments: No stat settings found for stat ${stat}. Skipping...`
         );
         continue;
@@ -108,16 +111,36 @@ export class EnchantManager {
       );
 
       const value = Math.round(statValues[i] * statMultiplier);
-      console.log(
+      this.logger.debug(
         `generateEnchantments: Stat value = ${statValues[i]}. Multiplier = ${statMultiplier}. Final value = ${value}`
       );
-      console.log(
-        `generateEnchantments: Pushing final stat enchantment Stat|Value: (${stat}|${value}) to item ${item.GetName()}.`
+
+      this.logger.debug(
+        `generateEnchantments: Pushing final stat enchantment Stat|Value: (${
+          Item.Stat[stat]
+        }|${value}) to item ${item.GetName()}.`
       );
-      enchantments.push({
-        value,
+
+      const statToAdd: CustomStat = {
         stat,
-      });
+        value,
+      };
+      const index = enchantments.findIndex((enchantment) => enchantment.stat === stat);
+      if (index === -1) {
+        this.logger.debug("generateEnchantments: Adding as new stat enchantment.");
+        enchantments.push(statToAdd);
+      } else {
+        this.logger.debug(
+          `generateEnchantments: Updating existing stat 
+          ${Item.Stat[stat]} enchantment. Incrementing value from 
+          ${enchantments[index].value} with ${value}`
+        );
+        enchantments[index].value += value;
+        this.logger.debug(
+          `generateEnchantments: Final ${Item.Stat[stat]} enchantment value = 
+          ${enchantments[index].value}.`
+        );
+      }
     }
 
     // Is item perfect? i.e. Max point variance and all possible enchantments added? Tag it as such.
@@ -125,7 +148,7 @@ export class EnchantManager {
     const isPerfect = this.isItemPerfect(item.GetQuality(), enchantments, hasMaxVariance);
 
     if (isPerfect)
-      console.log(`generateEnchantments: Item ${item.GetName()} is perfect!`);
+      this.logger.info(`generateEnchantments: Item ${item.GetName()} is perfect!`);
 
     return {
       enchantments,
@@ -166,23 +189,23 @@ export class EnchantManager {
     const rollSettings = enchantRollSettings.get(quality);
     if (!rollSettings) return 0;
 
-    console.log(`rollForEnchantCount: starting...`);
+    this.logger.debug(`rollForEnchantCount: starting...`);
     const rankBonus = this.enchantRollBonusForRank(rank);
 
     let enchantCount = 0;
     let neededRoll = rollSettings.enchantmentNeededRoll;
     let roll = Random.getRandomChance() + rankBonus;
-    console.log(
+    this.logger.debug(
       `rollForEnchantCount: Total Roll = ${roll}. Needed Roll = ${neededRoll}. Rank Bonus = ${rankBonus}.`
     );
 
     while (roll >= neededRoll) {
       enchantCount++;
-      console.log(
+      this.logger.debug(
         `rollForEnchantCount: Roll successful! Enchantment count increased to ${enchantCount}.`
       );
       if (enchantCount >= rollSettings.maxEnchants) {
-        console.log(
+        this.logger.debug(
           `rollForEnchantCount: Max enchantments reached for quality ${quality}. Breaking...`
         );
         break;
@@ -190,7 +213,7 @@ export class EnchantManager {
 
       neededRoll += rollSettings.extraNeededChancePerRoll;
       roll = Random.getRandomChance() + rankBonus;
-      console.log(
+      this.logger.debug(
         `rollForEnchantCount: Total Roll = ${roll}. Needed Roll = ${neededRoll}. Rank Bonus = ${rankBonus}.`
       );
     }
@@ -224,14 +247,16 @@ export class EnchantManager {
     itemClassPair: ItemClassPair,
     allowRepeats: boolean = false
   ): number[] {
-    const statList: Item.Stat[] = this.statSettingsManager.getStatList();
+    const statList: Item.Stat[] = this.statSettingsManager.getStatList().slice();
     if (statList.length === 0) {
-      console.log(`pickRandomStats: No stat settings found. Returning empty array.`);
+      this.logger.error(
+        `pickRandomStats: No stat settings found. Returning empty array.`
+      );
       return [];
     }
 
     if (!allowRepeats && statCount > statList.length) {
-      console.log(
+      this.logger.error(
         `pickRandomStats: Requested stats exceed available stats without repeats. Returning empty array.`
       );
       return [];
@@ -240,10 +265,19 @@ export class EnchantManager {
     const pickedStats: number[] = [];
 
     for (let i = 0; i < statCount; i++) {
-      const pickedStatKey = this.pickRandomStatForItem(itemClassPair, statList);
-      if (pickedStatKey === null) break; // Stop if no valid stats are left.
-      pickedStats.push(pickedStatKey);
-      if (!allowRepeats) statList.splice(pickedStatKey, 1);
+      const pickedStatIndex = this.pickRandomStatForItem(itemClassPair, statList);
+      if (
+        pickedStatIndex === null ||
+        pickedStatIndex < 0 ||
+        pickedStatIndex >= statList.length
+      ) {
+        this.logger.error(
+          `pickRandomStats: Invalid stat ${pickedStatIndex} picked. Stopping early.`
+        );
+        break;
+      }
+      pickedStats.push(pickedStatIndex);
+      if (!allowRepeats) statList.splice(pickedStatIndex, 1); // Ensure correct indexing.
     }
 
     return pickedStats;
@@ -261,11 +295,11 @@ export class EnchantManager {
     statList: Item.Stat[]
   ): number | null {
     if (statList.length === 0) {
-      console.log(`pickRandomStat: No stat settings found. Returning null.`);
+      this.logger.error(`pickRandomStat: No stat settings found. Returning null.`);
       return null;
     }
 
-    const localStatList: Item.Stat[] = Array(...statList);
+    const localStatList: Item.Stat[] = statList.slice();
 
     while (localStatList.length > 0) {
       const randomIndex = Random.getRandomInt(0, localStatList.length - 1);
@@ -274,7 +308,7 @@ export class EnchantManager {
         this.statSettingsManager.getSettingsForStat(pickedStatKey);
 
       if (!pickedStatSettings) {
-        console.log(
+        this.logger.error(
           `pickRandomStat: non-existent settings for stat ${Item.Stat[pickedStatKey]}. Skipping...`
         );
         localStatList.splice(randomIndex, 1); // Remove invalid stat.
@@ -285,7 +319,7 @@ export class EnchantManager {
         return pickedStatKey;
       }
 
-      console.log(
+      this.logger.debug(
         `pickRandomStat: Stat ${
           Item.Stat[pickedStatKey]
         } is not valid for item Class|Subclass pair (${Item.Class[itemClassPair.class]}|${
@@ -295,7 +329,7 @@ export class EnchantManager {
       localStatList.splice(randomIndex, 1); // Remove invalid stat.
     }
 
-    console.log(`pickRandomStat: No valid stats found. Returning null.`);
+    this.logger.warn(`pickRandomStat: No valid stats found. Returning null.`);
     return null;
   }
 
