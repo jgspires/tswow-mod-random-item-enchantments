@@ -1,5 +1,5 @@
 export namespace Creature {
-  export const enum Rank {
+  export enum Rank {
     NORMAL = 0,
     ELITE = 1,
     RARE_ELITE = 2,
