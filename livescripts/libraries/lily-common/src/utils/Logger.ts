@@ -5,7 +5,7 @@ export const enum LogLevel {
   ERROR = 0,
 }
 
-const DEFAULT_LOG_LEVEL = LogLevel.INFO;
+const DEFAULT_LOG_LEVEL = LogLevel.DEBUG;
 
 export class Logger {
   private prefix: string;
