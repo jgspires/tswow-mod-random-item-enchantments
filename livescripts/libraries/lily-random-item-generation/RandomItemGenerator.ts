@@ -54,7 +54,7 @@ export class RandomItemGenerator {
     console.log(
       `createEnchantedItemFromItem: Item ${existingTemp.GetName()}: Item class = ${
         Item.Class[existingTemp.GetClass()]
-      }, Item subclass = ${Item.Subclass[existingTemp.GetSubClass()]}`
+      }, Item subclass = ${existingTemp.GetSubClass()}`
     );
     if (this.attemptToGenEnchantments(newTemplate, creature) == 0) {
       console.log(
@@ -143,12 +143,12 @@ export class RandomItemGenerator {
     for (const customStat of customStats) {
       const addedStatOrUndef = StatUtils.addOrUpdateStat(item, customStat);
       if (addedStatOrUndef) {
+        addedStats.push(addedStatOrUndef);
         console.log(
           `addOrUpdateCustomStats: Sucessfully added or updated stat ${
             Item.Stat[customStat.stat]
           }. Value = ${customStat.value}. to item ${item.GetName()}.`
         );
-        addedStats.push(addedStatOrUndef);
       } else
         console.warn(
           `addOrUpdateCustomStats: Could not add stat ${Item.Stat[customStat.stat]} (${
