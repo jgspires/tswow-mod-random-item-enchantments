@@ -60,7 +60,7 @@ export class StatUtils {
    * @returns `number` - The index of the stat in the item's enchantments. Returns -1 if the stat is not found.
    */
   static findStatIndex(item: TSItemTemplate, stat: Item.Stat): number {
-    for (let i = 0; i < this.MAX_ITEM_STATS; i++) {
+    for (let i = 0; i < item.GetStatsCount(); i++) {
       if (item.GetStatType(i) == stat) return i;
     }
     return -1;
