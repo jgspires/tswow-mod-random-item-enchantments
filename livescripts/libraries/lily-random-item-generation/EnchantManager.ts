@@ -95,7 +95,7 @@ export class EnchantManager {
       }. Enchant count = ${enchantCount}`
     );
     // Push the picked stats and their values to the enchantment list of the item.
-    for (let i = 0; i < enchantCount; i++) {
+    for (let i = 0; i < pickedStats.length; i++) {
       const stat = pickedStats[i];
       const statSettings = this.statSettingsManager.getSettingsForStat(stat);
       if (!statSettings) {
@@ -265,19 +265,14 @@ export class EnchantManager {
     const pickedStats: number[] = [];
 
     for (let i = 0; i < statCount; i++) {
-      const pickedStatIndex = this.pickRandomStatForItem(itemClassPair, statList);
-      if (
-        pickedStatIndex === null ||
-        pickedStatIndex < 0 ||
-        pickedStatIndex >= statList.length
-      ) {
-        this.logger.error(
-          `pickRandomStats: Invalid stat ${pickedStatIndex} picked. Stopping early.`
-        );
+      // pickRandomStatForItem returns the stat itself (an Item.Stat value), not its position in statList.
+      const pickedStat = this.pickRandomStatForItem(itemClassPair, statList);
+      if (pickedStat === null) {
+        this.logger.error(`pickRandomStats: No valid stat could be picked. Stopping early.`);
         break;
       }
-      pickedStats.push(pickedStatIndex);
-      if (!allowRepeats) statList.splice(pickedStatIndex, 1); // Ensure correct indexing.
+      pickedStats.push(pickedStat);
+      if (!allowRepeats) statList.splice(statList.indexOf(pickedStat), 1);
     }
 
     return pickedStats;

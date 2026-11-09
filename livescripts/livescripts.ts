@@ -10,6 +10,9 @@ export function Main(events: TSEvents) {
 
   events.Player.OnLogin(SendModuleStartMessage);
 
+  // Fires once per server boot, but not again on livescript reloads, which is when cleanup could be unsafe.
+  events.World.OnStartup(() => randomItemGenerator.cleanUpUnusedTemplates());
+
   events.Creature.OnGenerateLoot((creature, player) => {
     const loot = creature.GetLoot();
     for (let i = 0; i < loot.GetItemCount(); i++) {

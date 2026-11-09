@@ -1,5 +1,4 @@
 import { Item, Random, Creature } from "../lily-common/src";
-import { MinHeap } from "../lily-common/src/data-structures";
 import { Logger } from "../lily-common/src/utils";
 import { StatUtils } from "./components";
 import { CustomStat } from "./components/types";
@@ -15,24 +14,27 @@ import { EnchantmentRollSettings } from "./settings/types";
 
 export class RandomItemGenerator {
   enchantManager: EnchantManager;
-  freeIDs: MinHeap;
-  usedIDs: Set<number>;
-  maxID: number;
+  /**
+   * Highest item template ID ever handed out. IDs only ever go up and are never reused:
+   * a reused ID can show a stale name and stats from the client's item cache.
+   */
+  lastID: number;
   itemQualitySettings: Map<Item.Quality, EnchantmentRollSettings>;
 
   private logger: Logger;
 
   static ITEM_CREATION_ID_START = 100000;
+  /** `item_instance.itemEntry` is a MEDIUMINT UNSIGNED, so no item can use an entry above this. */
+  static ITEM_ENTRY_MAX = 16777215;
+  /** Small key/value table (characters DB) that persists `lastID` across restarts and livescript reloads. */
+  static STATE_TABLE = "lily_rie_state";
+  static LAST_ID_SETTING = "last_item_id";
 
   constructor() {
-    this.maxID = RandomItemGenerator.ITEM_CREATION_ID_START - 1;
     this.enchantManager = new EnchantManager();
-    this.freeIDs = new MinHeap();
-    this.usedIDs = new Set<number>();
     this.itemQualitySettings = enchantRollSettings;
     this.logger = new Logger("RandomItemGenerator");
-    this.setupAndCleanIDs();
-    this.cleanUpItems();
+    this.lastID = this.loadLastID();
   }
 
   /**
@@ -45,7 +47,15 @@ export class RandomItemGenerator {
     existingTemp: TSItemTemplate,
     creature: TSCreature
   ): TSItemTemplate | undefined {
-    const newId = this.getLowestFreeID();
+    const newId = this.lastID + 1;
+    if (newId > RandomItemGenerator.ITEM_ENTRY_MAX) {
+      this.logger.error(
+        `createEnchantedItemFromItem: Item ID space exhausted (next ID ${newId} > ${RandomItemGenerator.ITEM_ENTRY_MAX}). Dropping the base item unchanged.`
+      );
+      return undefined;
+    }
+    // CreateItemTemplate overwrites whatever template is in memory at `newId` with a fresh copy of the parent,
+    // so if this attempt rolls no enchantments, the next attempt can safely reuse the same (still unsaved) ID.
     const newTemplate = CreateItemTemplate(newId, existingTemp.GetEntry());
 
     const quality = this.rollForQuality(existingTemp, creature);
@@ -66,7 +76,7 @@ export class RandomItemGenerator {
     console.log(
       `createEnchantedItemFromItem: NewTemplate entry = ${newTemplate.GetEntry()}. Name = ${newTemplate.GetName()}`
     );
-    this.createNewId();
+    this.commitID(newId);
     newTemplate.SetMaterial(existingTemp.GetMaterial());
     newTemplate.Save();
     return newTemplate;
@@ -179,7 +189,7 @@ export class RandomItemGenerator {
     if (enchantments.length == 1) {
       const affixName = this.getRandomAffixName(enchantments[0].stat);
       finalName += `${affixName} ${item.GetName()}`;
-      return finalName;
+      return isPerfect ? `${PERFECT_ITEM_PREFIX} ${finalName}` : finalName;
     }
 
     for (let i = 0; i < enchantments.length; i++) {
@@ -282,74 +292,80 @@ export class RandomItemGenerator {
     return creatureRankBonuses.get(creatureRank)?.qualityRollMultiplier || 1;
   }
 
-  // Gets the lowest free ID and increments (creates) the new ID
-  private createNewId(): number {
-    let newID: number;
+  /**
+   * Works out the highest ID handed out so far, so new IDs always continue above it.
+   *
+   * Takes the highest of: the persisted counter, any saved template in our range, and any world
+   * `item_template` in our range. The last one guards against colliding with items created elsewhere
+   * (e.g. datascripts), because `CreateItemTemplate` would silently overwrite that item's template.
+   */
+  private loadLastID(): number {
+    const start = RandomItemGenerator.ITEM_CREATION_ID_START;
+    const table = RandomItemGenerator.STATE_TABLE;
+    let last = start - 1;
 
-    if (!this.freeIDs.isEmpty()) {
-      this.logger.debug("createNewId: Free IDs heap not empty. Reusing free ID...");
-      newID = this.freeIDs.pop(); // Reuse the lowest free ID
-      this.logger.debug("createNewId: Reused free ID = " + newID);
-    } else {
-      this.logger.debug(
-        "createNewId: Free IDs heap empty. Creating new ID from current maxID..."
-      );
-      newID = this.maxID + 1;
-      this.logger.debug("createNewId: New ID = " + newID);
-      this.maxID = newID;
-    }
-
-    this.usedIDs.add(newID);
-    return newID;
-  }
-
-  // Gets the lowest free ID without creating a new one
-  private getLowestFreeID(): number {
-    if (!this.freeIDs.isEmpty()) {
-      return this.freeIDs.peek();
-    }
-    return this.maxID + 1;
-  }
-
-  // Fetches ALL IDs >= ITEM_CREATION_ID_START currently in use by the DB.
-  private getIDsInUseFromDB(): number[] {
-    const idsInUse: number[] = [];
-    let res = QueryCharacters("SELECT entry FROM custom_item_template");
-
-    while (res.GetRow()) {
-      idsInUse.push(res.GetUInt32(0));
-    }
-
-    return idsInUse;
-  }
-
-  private setupAndCleanIDs() {
-    let q = QueryCharacters("SELECT MAX(entry) FROM custom_item_template");
-
-    if (q.GetRow()) {
-      const rowID = q.GetUInt32(0);
-      if (rowID > RandomItemGenerator.ITEM_CREATION_ID_START) this.maxID = rowID;
-    }
-  }
-
-  // Removes unused custom ItemTemplates from the DB and frees their IDs
-  private cleanUpItems(): void {
     QueryCharacters(
-      "DELETE FROM item_instance WHERE guid NOT IN ( SELECT item FROM character_inventory);"
-    );
-    QueryCharacters(
-      "DELETE FROM custom_item_template WHERE entry NOT IN ( SELECT itemEntry FROM item_instance)"
+      `CREATE TABLE IF NOT EXISTS ${table} (setting VARCHAR(64) NOT NULL PRIMARY KEY, num INT UNSIGNED NOT NULL)`
     );
 
-    const idsInUse = new Set(this.getIDsInUseFromDB());
+    const stored = QueryCharacters(
+      `SELECT num FROM ${table} WHERE setting = '${RandomItemGenerator.LAST_ID_SETTING}'`
+    );
+    if (stored.GetRow()) last = Math.max(last, stored.GetUInt32(0));
 
-    this.logger.debug(`setupAndCleanIDs: Ids in Use length = ${idsInUse.size}`);
+    const saved = QueryCharacters(
+      `SELECT MAX(entry) FROM custom_item_template WHERE entry >= ${start}`
+    );
+    if (saved.GetRow()) last = Math.max(last, saved.GetUInt32(0));
 
-    for (let i = RandomItemGenerator.ITEM_CREATION_ID_START; i <= this.maxID; i++) {
-      if (!idsInUse.has(i)) {
-        this.logger.debug(`setupAndCleanIDs: Reclaiming unused id ${i}`);
-        this.freeIDs.push(i);
+    const world = QueryWorld(`SELECT MAX(entry) FROM item_template WHERE entry >= ${start}`);
+    if (world.GetRow()) {
+      const worldMax = world.GetUInt32(0);
+      if (worldMax > last) {
+        this.logger.warn(
+          `loadLastID: World item_template already uses IDs up to ${worldMax}. Generated items will start above it.`
+        );
+        last = worldMax;
       }
     }
+
+    this.persistLastID(last);
+    this.logger.info(`loadLastID: Next generated item ID will be ${last + 1}.`);
+    return last;
+  }
+
+  /** Marks `id` as used. Called only once a generated template is actually kept. */
+  private commitID(id: number): void {
+    this.lastID = id;
+    this.persistLastID(id);
+  }
+
+  private persistLastID(id: number): void {
+    QueryCharacters(
+      `INSERT INTO ${RandomItemGenerator.STATE_TABLE} (setting, num) VALUES ('${RandomItemGenerator.LAST_ID_SETTING}', ${id}) ` +
+        `ON DUPLICATE KEY UPDATE num = GREATEST(num, ${id})`
+    );
+  }
+
+  /**
+   * Deletes saved templates that no item uses any more, so `custom_item_template` doesn't grow forever.
+   *
+   * `item_instance` holds every persisted item (inventories, banks, mail, auctions and guild banks),
+   * `character_gifts` holds the original entry of gift-wrapped items, and `item_loot_items` holds loot
+   * stored inside items. Only module-generated templates (IDs from `ITEM_CREATION_ID_START`) are touched.
+   *
+   * Only call this at server startup (`World.OnStartup`), never on a livescript reload: while players are
+   * online, freshly looted items may not be saved to `item_instance` yet, and their templates would be deleted.
+   */
+  cleanUpUnusedTemplates(): void {
+    QueryCharacters(
+      `DELETE FROM custom_item_template WHERE entry >= ${RandomItemGenerator.ITEM_CREATION_ID_START} ` +
+        "AND entry NOT IN (SELECT itemEntry FROM item_instance) " +
+        "AND entry NOT IN (SELECT entry FROM character_gifts) " +
+        "AND entry NOT IN (SELECT item_id FROM item_loot_items)"
+    );
+    this.logger.info(
+      "cleanUpUnusedTemplates: Removed saved templates that no item uses any more."
+    );
   }
 }

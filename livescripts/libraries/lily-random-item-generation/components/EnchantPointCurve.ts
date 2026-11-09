@@ -53,11 +53,13 @@ export namespace EnchantPointCurve {
       );
       return { points: 0, variance: 0 };
     }
-    const varianceFactor = Random.getRandomInt(100 - variance, 100 + variance) / 100;
+    const varianceRoll = Random.getRandomInt(100 - variance, 100 + variance);
+    const varianceFactor = varianceRoll / 100;
     return {
       points: Math.round(points * varianceFactor),
       variance: varianceFactor,
-      hasMaxVariance: varianceFactor === variance ? true : false,
+      // Compare the integer roll, not the factor: the factor (e.g. 1.2) never equals the percentage (e.g. 20).
+      hasMaxVariance: varianceRoll === 100 + variance,
     };
   }
 
