@@ -204,4 +204,51 @@ export namespace Item {
     SPELL_PENETRATION = 47,
     BLOCK_VALUE = 48,
   }
+
+  /** Mimics InventoryType enum from tswow's (TrinityCore's) source code: the slot an item is equipped in. */
+  export enum InventoryType {
+    NON_EQUIP = 0,
+    HEAD = 1,
+    NECK = 2,
+    SHOULDERS = 3,
+    BODY = 4,
+    CHEST = 5,
+    WAIST = 6,
+    LEGS = 7,
+    FEET = 8,
+    WRISTS = 9,
+    HANDS = 10,
+    FINGER = 11,
+    TRINKET = 12,
+    WEAPON = 13,
+    SHIELD = 14,
+    RANGED = 15,
+    CLOAK = 16,
+    TWO_HAND_WEAPON = 17,
+    BAG = 18,
+    TABARD = 19,
+    ROBE = 20,
+    WEAPON_MAIN_HAND = 21,
+    WEAPON_OFF_HAND = 22,
+    HOLDABLE = 23,
+    AMMO = 24,
+    THROWN = 25,
+    RANGED_RIGHT = 26,
+    QUIVER = 27,
+    RELIC = 28,
+  }
+
+  /** Player class IDs, as used by `TSPlayer.GetClass()`. */
+  export enum PlayerClass {
+    WARRIOR = 1,
+    PALADIN = 2,
+    HUNTER = 3,
+    ROGUE = 4,
+    PRIEST = 5,
+    DEATH_KNIGHT = 6,
+    SHAMAN = 7,
+    MAGE = 8,
+    WARLOCK = 9,
+    DRUID = 11,
+  }
 }

@@ -1,12 +1,14 @@
 import { Item } from "./libraries/lily-common/src";
 import { RandomItemGenerator, LIB_NAME } from "./libraries/lily-random-item-generation";
-import { EnchantPointCurve } from "./libraries/lily-random-item-generation/components/";
+import { EnchantPointCurve, ItemBudget } from "./libraries/lily-random-item-generation/components/";
 
 const randomItemGenerator = new RandomItemGenerator();
 
 export function Main(events: TSEvents) {
   console.log(`${LIB_NAME}: Livescripts started!`);
   EnchantPointCurve.generatePointCurve();
+  // Item stat budgets exported by this module's datascripts (falls back to the point curve if missing).
+  ItemBudget.load();
 
   events.Player.OnLogin(SendModuleStartMessage);
 
@@ -37,7 +39,8 @@ function rollEnchantedItemFromLoot(
     );
     const newItem = randomItemGenerator.createEnchantedItemFromItem(
       itemTemplate,
-      creature
+      creature,
+      player
     );
 
     if (newItem) {

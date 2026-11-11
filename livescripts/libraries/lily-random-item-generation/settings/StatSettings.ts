@@ -28,6 +28,17 @@ export const enchantableStats = new Set<Item.Stat>([
   Item.Stat.BLOCK_RATING,
   Item.Stat.BLOCK_VALUE,
   Item.Stat.CRIT_RATING,
+  // Added with the class/item stat pools (see StatPoolSettings.ts for who is likely to roll what).
+  Item.Stat.ATTACK_POWER,
+  Item.Stat.SPELL_POWER,
+  Item.Stat.MANA_REGENERATION,
+  Item.Stat.HIT_RATING,
+  Item.Stat.HASTE_RATING,
+  Item.Stat.EXPERTISE_RATING,
+  Item.Stat.ARMOR_PENETRATION_RATING,
+  Item.Stat.DEFENSE_SKILL_RATING,
+  Item.Stat.DODGE_RATING,
+  Item.Stat.PARRY_RATING,
 ]);
 
 /**
@@ -37,14 +48,12 @@ export const enchantableStats = new Set<Item.Stat>([
  * Thus, it will be available for all item classes/subclasses that roll random enchantments.
  */
 const statItemRequirements = new Map<Item.Stat[], ClassSubclassRequirements[]>([
-  [
-    [Item.Stat.CRIT_RATING],
-    [
-      {
-        classRequirement: Item.Class.ITEM_CLASS_WEAPON,
-      },
-    ],
-  ],
+  // Crit used to be weapons-only. With class-aware stat pools it's a core stat for every damage dealer,
+  // so it can roll on any item now. Ratings give more % per point at low levels, but so does every other
+  // stat (a level 20 character's health, damage and crit are all small), so they stay comparable to the
+  // primary stats on the same item and need no special scaling.
+  // To restore weapons-only crit, uncomment this entry:
+  // [[Item.Stat.CRIT_RATING], [{ classRequirement: Item.Class.ITEM_CLASS_WEAPON }]],
   [
     [Item.Stat.BLOCK_RATING, Item.Stat.BLOCK_VALUE],
     [
@@ -69,20 +78,40 @@ const statItemRequirements = new Map<Item.Stat[], ClassSubclassRequirements[]>([
  */
 const statMultipliers = new Map<Item.Stat[], StatMultiplierSettings>([
   [[Item.Stat.HEALTH, Item.Stat.MANA], { baseMultiplier: 10.0 }], // Increase health and mana by 10x
+  // Shields: block value is pure damage reduction on blocked hits, so it keeps a fun 1.5x.
+  // Block rating is a chance to avoid most of a hit, so it stays at 1x and counts towards the avoidance cap.
   [
-    [Item.Stat.BLOCK_RATING, Item.Stat.BLOCK_VALUE],
+    [Item.Stat.BLOCK_VALUE],
     {
       baseMultiplier: 1.0,
       classMultiplierOverrides: [
-        // Increase block rating and block value for shields by 2x
         {
           class: Item.Class.ITEM_CLASS_ARMOR,
           subclasses: [Item.Subclass.ARMOR_SHIELD],
-          overrideMultiplier: 2.0,
+          overrideMultiplier: 1.5,
         },
       ],
     },
   ],
+  [
+    [Item.Stat.BLOCK_RATING],
+    {
+      baseMultiplier: 1.0,
+      classMultiplierOverrides: [
+        {
+          class: Item.Class.ITEM_CLASS_ARMOR,
+          subclasses: [Item.Subclass.ARMOR_SHIELD],
+          overrideMultiplier: 1.0,
+        },
+      ],
+    },
+  ],
+  // Blizzard's item budget prices these differently from primary stats (points per stat point):
+  // attack power 0.5, spell power ~0.86, mana per 5 seconds ~2. These convert one enchantment point
+  // into the matching amount, so every stat on an item is worth about the same.
+  [[Item.Stat.ATTACK_POWER], { baseMultiplier: 2.0 }],
+  [[Item.Stat.SPELL_POWER], { baseMultiplier: 1.15 }],
+  [[Item.Stat.MANA_REGENERATION], { baseMultiplier: 0.5 }],
 ]);
 
 /**

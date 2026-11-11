@@ -11,9 +11,18 @@ export namespace EnchantPointCurve {
 
   /** Stores enchantment points available per level for enchantment generation on created items.  */
   const enchantPoints = new Map<Level, Points>([]);
+  /*
+   *  Only used when `enchantPointSettings.source` is "CURVE", or as a fallback when an item has no
+   *  item budget (see GenerationSettings.ts).
+   *
+   *  Was steepness 7, growth 1.021. That roughly matched item budgets up to about item level 70, then
+   *  outgrew them: an estimated 3–4x a green item's own stats at item level 200 and around 10x at 264.
+   *  These values give the same points at low item levels (12 at item level 25) and stay roughly
+   *  in proportion to item stats after that (18 at 60, 35 at 115, 97 at 200, 207 at 264).
+   */
   const formula = {
-    growthFactor: 1.021,
-    steepness: 7,
+    growthFactor: 1.012,
+    steepness: 9,
     baseline: 0,
   };
 
@@ -53,6 +62,19 @@ export namespace EnchantPointCurve {
       );
       return { points: 0, variance: 0 };
     }
+    return applyVariance(points, variance);
+  }
+
+  /**
+   * Applies a random ±`variance`% to a point amount.
+   *
+   * @param points base points before variance.
+   * @param variance percentage of variance to apply either way.
+   */
+  export function applyVariance(
+    points: number,
+    variance: number = DEFAULT_POINT_VARIANCE_PERCENT
+  ): EnchantPointsAndVariance {
     const varianceRoll = Random.getRandomInt(100 - variance, 100 + variance);
     const varianceFactor = varianceRoll / 100;
     return {

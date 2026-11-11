@@ -34,7 +34,9 @@ export const creatureRankBonuses = new Map<Creature.Rank, CreatureRankSettings>(
   [
     Creature.Rank.BOSS,
     {
-      qualityRollMultiplier: 1.35,
+      // Was 1.35. With +8 per rarity below, a boss's blue drop becomes legendary 3.3% of the time
+      // (was 10.5%), and an epic 15% (was 31%). Dungeon bosses use these too (see dungeonLootSettings).
+      qualityRollMultiplier: 1.25,
       enchantRollBonus: 50,
     },
   ],
@@ -49,7 +51,11 @@ export const creatureRankBonuses = new Map<Creature.Rank, CreatureRankSettings>(
 
 export const qualityUptierSettings: QualityUptierSettings = {
   minRollForRarityUptier: 75,
-  addMinRollPerRarity: 5,
+  // Was 5. Each rarity step is harder to reach, which mostly thins out epics and legendaries.
+  // Side effect: with a 1.0 multiplier (normal mobs) the epic step needs 107, so normal mobs can no longer
+  // upgrade anything to legendary, and a green from a normal mob becomes epic 0.2% of the time (was 1.8%).
+  // To keep more open-world jackpots, raise NORMAL's qualityRollMultiplier (1.05 gives about 1%).
+  addMinRollPerRarity: 8,
 };
 
 export const enchantRollSettings = new Map<Item.Quality, EnchantmentRollSettings>([
@@ -108,3 +114,52 @@ export const enchantRollSettings = new Map<Item.Quality, EnchantmentRollSettings
     },
   ],
 ]);
+
+/**
+ * Where an item's enchantment points come from.
+ *
+ * - `ITEM_BUDGET` (default): Blizzard's item stat budget for the item's level and slot (RandPropPoints.dbc,
+ *   exported by this module's datascripts), times the quality's `enchantPointMultiplier`. Enchantments then
+ *   stay the same size relative to the item at every level: a green enchantment is worth about one green
+ *   item's stats, a rare one about two, an epic three, a legendary five. Rings, wrists and other small
+ *   slots get smaller budgets than chests and two-handers, as in the base game.
+ * - `CURVE`: the absolute point curve in `EnchantPointCurve.ts`. Also used automatically when the budget
+ *   table is missing (datascripts not built) or an item's slot has no budget.
+ */
+export const enchantPointSettings = {
+  source: "ITEM_BUDGET" as "ITEM_BUDGET" | "CURVE",
+  /**
+   * Which RandPropPoints column to start from:
+   * - `GOOD`: every quality starts from the green budget, so `enchantPointMultiplier` alone decides
+   *   how much stronger each quality is.
+   * - `ITEM_QUALITY`: blues start from the blue column and epics/legendaries from the epic one,
+   *   which makes higher qualities roughly another 15–40% stronger.
+   */
+  budgetColumn: "GOOD" as "GOOD" | "ITEM_QUALITY",
+  /** Random variance applied to the points, in percent either way. A roll at the very top can make a "Perfect" item. */
+  variancePercent: 20,
+};
+
+/**
+ * Dungeon and raid loot.
+ *
+ * Most 5-player dungeon bosses are `ELITE` rank in the database, so before this they rolled like any
+ * elite. The core flags them as dungeon bosses at startup, which is what `dungeonBossesUseBossBonuses` checks.
+ */
+export const dungeonLootSettings = {
+  /** Flagged dungeon bosses use the `BOSS` rank bonuses above (when those are better than their own rank's). */
+  dungeonBossesUseBossBonuses: true,
+  /**
+   * Every other creature inside a dungeon or raid gets these on top of its rank's bonuses.
+   * The default only adds enchantments (an elite's green rolls at least one 66% of the time instead of 56%,
+   * a blue 86% instead of 76%). A rarity bonus above about 1.04 would let trash upgrade rarity more
+   * often than bosses do.
+   */
+  trash: {
+    enabled: true,
+    /** Multiplies the rank's quality roll multiplier. */
+    qualityRollMultiplier: 1.0,
+    /** Added to the rank's enchantment roll bonus. */
+    enchantRollBonus: 10,
+  },
+};
