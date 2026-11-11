@@ -280,14 +280,14 @@ export class StatSettingsManager {
    *
    */
   public getStatMultiplierForItemClass(itemClassPair: ItemClassPair): number {
-    this.itemClassStatMultipliers.forEach((multiplier, itemClassWithSubclasses) => {
+    for (const [pair, mult] of this.itemClassStatMultipliers) {
       if (
-        itemClassWithSubclasses.class === itemClassPair.class &&
-        itemClassWithSubclasses.subclasses.includes(itemClassPair.subclass)
+        pair.class === itemClassPair.class &&
+        pair.subclasses.includes(itemClassPair.subclass)
       ) {
-        return multiplier;
+        return mult;
       }
-    });
+    }
 
     return 1.0;
   }
