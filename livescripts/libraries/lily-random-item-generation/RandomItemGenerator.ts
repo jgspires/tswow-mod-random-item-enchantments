@@ -256,8 +256,8 @@ export class RandomItemGenerator {
 
   /**
    * Potentially improves the quality of the item, up to Legendary.
-   * Creatures of higher rank have a higher chance of getting better quality items, and so do dungeon
-   * bosses and dungeon creatures (see `dungeonLootSettings`).
+   * Creatures of higher rank have a higher chance of getting better quality items. Dungeon bosses roll
+   * with the boss bonuses, and other dungeon creatures can get extra bonuses (see `dungeonLootSettings`).
    *
    * Becomes increasingly more difficult the higher the item's quality is.
    */
