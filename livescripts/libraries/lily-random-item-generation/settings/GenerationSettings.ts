@@ -1,8 +1,8 @@
-import { Item, Creature } from "../../lily-common/src";
+import { Creature, Item } from "../../lily-common/src";
 import {
   CreatureRankSettings,
-  QualityUptierSettings,
   EnchantmentRollSettings,
+  QualityUptierSettings,
 } from "./types";
 
 /**
@@ -14,7 +14,7 @@ export const creatureRankBonuses = new Map<Creature.Rank, CreatureRankSettings>(
   [
     Creature.Rank.NORMAL,
     {
-      qualityRollMultiplier: 1.0,
+      qualityRollMultiplier: 1.065,
     },
   ],
   [
@@ -54,7 +54,8 @@ export const qualityUptierSettings: QualityUptierSettings = {
   // Was 5. Each rarity step is harder to reach, which mostly thins out epics and legendaries.
   // Side effect: with a 1.0 multiplier (normal mobs) the epic step needs 107, so normal mobs can no longer
   // upgrade anything to legendary, and a green from a normal mob becomes epic 0.2% of the time (was 1.8%).
-  // To keep more open-world jackpots, raise NORMAL's qualityRollMultiplier (1.05 gives about 1%).
+  // To keep more open-world jackpots, raise NORMAL's qualityRollMultiplier (1.05 gives about 1% green → epic).
+  // Legendaries remain impossible below 1.065 multiplier, which would require a 100 roll (1/7800 final prob.)
   addMinRollPerRarity: 8,
 };
 
