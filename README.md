@@ -44,7 +44,7 @@ Enchantable stats now also include attack power, spell power, mana per 5 seconds
 
 ## Crafting
 
-Crafted armour and weapons roll too (`livescripts/Crafting.ts`, `craftingSettings` in `GenerationSettings.ts`). The craft happens normally (skill-ups, reagents, "Made by"), then the new item is rolled like a drop and, if it gets enchantments, swapped for the enchanted copy. The player sees "You create:" for the plain item, then "You receive item:" for the enchanted one.
+Crafted armour and weapons roll too (`livescripts/Crafting.ts`, `craftingSettings` in `GenerationSettings.ts`). This needs the `Spell.OnCreateItem` event from Lily's tswow and TrinityCore forks: just before the craft stores its item, the item is rolled like a drop and, if it gets enchantments, the enchanted copy is created instead. Everything else about the craft is unchanged (reagents, skill-ups, "Made by", the "You create" message).
 
 - Rarity upgrades default to normal-mob odds, because crafting can be repeated on demand.
 - `enchantRollBonus` (default +15) makes crafted pieces roll enchantments more often than normal-mob drops: a green gets at least one 46% of the time, a blue 66%.
