@@ -1,6 +1,7 @@
 import { Item } from "./libraries/lily-common/src";
-import { RandomItemGenerator, LIB_NAME } from "./libraries/lily-random-item-generation";
+import { RandomItemGenerator, LIB_NAME, LootSource } from "./libraries/lily-random-item-generation";
 import { EnchantPointCurve, ItemBudget } from "./libraries/lily-random-item-generation/components/";
+import { registerCraftingEnchantments } from "./Crafting";
 
 const randomItemGenerator = new RandomItemGenerator();
 
@@ -22,6 +23,9 @@ export function Main(events: TSEvents) {
       rollEnchantedItemFromLoot(currentLootItem, creature, player);
     }
   });
+
+  // Crafted equipment (see Crafting.ts and craftingSettings). Shares the generator, so item IDs stay unique.
+  registerCraftingEnchantments(events, randomItemGenerator);
 }
 
 function rollEnchantedItemFromLoot(
@@ -39,7 +43,7 @@ function rollEnchantedItemFromLoot(
     );
     const newItem = randomItemGenerator.createEnchantedItemFromItem(
       itemTemplate,
-      creature,
+      LootSource.bonusesFor(creature),
       player
     );
 

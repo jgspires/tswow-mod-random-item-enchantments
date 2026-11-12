@@ -42,6 +42,14 @@ Enchantable stats now also include attack power, spell power, mana per 5 seconds
 - Most 5-player dungeon bosses are elite rank in the database, so they used to roll like any elite. Creatures the core flags as dungeon bosses now use the boss bonuses.
 - Every other creature in a dungeon or raid gets +10 to the enchantment count roll.
 
+## Crafting
+
+Crafted armour and weapons roll too (`livescripts/Crafting.ts`, `craftingSettings` in `GenerationSettings.ts`). The craft happens normally (skill-ups, reagents, "Made by"), then the new item is rolled like a drop and, if it gets enchantments, swapped for the enchanted copy. The player sees "You create:" for the plain item, then "You receive item:" for the enchanted one.
+
+- Rarity upgrades default to normal-mob odds, because crafting can be repeated on demand.
+- `enchantRollBonus` (default +15) makes crafted pieces roll enchantments more often than normal-mob drops: a green gets at least one 46% of the time, a blue 66%.
+- Stats lean towards the crafter's class, or a group member's who suits the item.
+
 ## Rarity odds (exact, from the roll rules)
 
 | Source | Green → blue or better | Green → epic or better | Blue → legendary | Epic → legendary | Blue rolls ≥1 enchantment |

@@ -9,7 +9,7 @@ import {
   EnchantPointsAndVariance,
   ItemClassPair,
 } from "./components/types";
-import { LootSource } from "./LootSource";
+import { LootSourceBonuses } from "./LootSource";
 import {
   enchantRollSettings,
   enchantPointSettings,
@@ -32,13 +32,13 @@ export class EnchantManager {
 
   /**
    * @param item the (already quality-rolled) item template to generate enchantments for.
-   * @param creature the creature that dropped it (rank and dungeon bonuses).
+   * @param bonuses rarity and enchantment roll bonuses of the item's source (creature rank, dungeon, crafting).
    * @param classToRollFor class whose stat weights to use (see `StatPool.pickClassToRollFor`),
    * or `undefined` to use only the item-type affinities.
    */
   public generateEnchantments(
     item: TSItemTemplate,
-    creature: TSCreature,
+    bonuses: LootSourceBonuses,
     classToRollFor?: number
   ): EnchantGenResult {
     const enchantments: CustomStat[] = [];
@@ -59,10 +59,7 @@ export class EnchantManager {
     const totalPointsAndVariance: EnchantPointsAndVariance = this.rollPointsForItem(item);
     const totalPoints = totalPointsAndVariance.points * pointMultiplier;
 
-    const enchantCount = this.rollForEnchantCount(
-      item.GetQuality(),
-      LootSource.bonusesFor(creature).enchantRollBonus
-    );
+    const enchantCount = this.rollForEnchantCount(item.GetQuality(), bonuses.enchantRollBonus);
 
     if (enchantCount == 0) {
       this.logger.error(
@@ -205,7 +202,7 @@ export class EnchantManager {
    * Returns how many enchantments this new item will get.
    * Does not actually generate any enchantments.
    *
-   * Mostly determined by item `quality` and creature rank (plus dungeon bonuses), with a degree of randomness.
+   * Mostly determined by item `quality` and the item's source (creature rank, dungeon, crafting), with a degree of randomness.
    *
    * @param quality item quality used in roll.
    * @param rankBonus nominal bonus added to every roll (from `LootSource.bonusesFor`).

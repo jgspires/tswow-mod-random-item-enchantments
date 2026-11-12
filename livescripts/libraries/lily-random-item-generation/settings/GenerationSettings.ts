@@ -164,3 +164,19 @@ export const dungeonLootSettings = {
     enchantRollBonus: 10,
   },
 };
+
+/**
+ * Crafted equipment (any profession recipe that creates armour or a weapon).
+ *
+ * Crafting can be repeated on demand, so rarity upgrades default to normal-mob odds (no legendaries,
+ * a green becomes blue 10% of the time and epic 0.2%), which keeps "craft until it's epic" a material
+ * sink rather than a farm. The enchantment bonus makes crafted pieces roll enchantments more often than
+ * drops from normal mobs: a green gets at least one 46% of the time (31% from a normal mob), a blue 66%.
+ */
+export const craftingSettings = {
+  enabled: true,
+  /** Multiplies the rarity upgrade roll, like a creature rank's `qualityRollMultiplier`. */
+  qualityRollMultiplier: 1.0,
+  /** Added to the enchantment count roll, like a creature rank's `enchantRollBonus`. */
+  enchantRollBonus: 15,
+};

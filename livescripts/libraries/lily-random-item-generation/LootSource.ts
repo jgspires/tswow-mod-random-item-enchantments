@@ -1,5 +1,5 @@
 import { Creature } from "../lily-common/src";
-import { creatureRankBonuses, dungeonLootSettings } from "./settings";
+import { craftingSettings, creatureRankBonuses, dungeonLootSettings } from "./settings";
 
 export type LootSourceBonuses = {
   /** Multiplies the quality upgrade roll. */
@@ -8,7 +8,7 @@ export type LootSourceBonuses = {
   enchantRollBonus: number;
 };
 
-/** Works out the loot bonuses a creature gives, from its rank and from where it is (dungeons, raids). */
+/** Works out the roll bonuses of an item's source: a creature (rank, dungeons, raids) or crafting. */
 export namespace LootSource {
   export function bonusesFor(creature: TSCreature): LootSourceBonuses {
     const template = creature.GetTemplate();
@@ -35,6 +35,14 @@ export namespace LootSource {
     }
 
     return own;
+  }
+
+  /** Bonuses for items players craft (see `craftingSettings`). */
+  export function bonusesForCrafting(): LootSourceBonuses {
+    return {
+      qualityRollMultiplier: craftingSettings.qualityRollMultiplier,
+      enchantRollBonus: craftingSettings.enchantRollBonus,
+    };
   }
 
   export function bonusesForRank(rank: Creature.Rank): LootSourceBonuses {

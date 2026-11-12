@@ -3,7 +3,7 @@ import { Logger } from "../lily-common/src/utils";
 import { StatUtils } from "./components";
 import { CustomStat } from "./components/types";
 import { EnchantManager } from "./EnchantManager";
-import { LootSource } from "./LootSource";
+import { LootSourceBonuses } from "./LootSource";
 import {
   enchantRollSettings,
   PERFECT_ITEM_PREFIX,
@@ -44,11 +44,13 @@ export class RandomItemGenerator {
    *
    * Note: "enchantments" here refer to stat boosts added to the `ItemTemplate` by this addon, not actual `Enchantments`.
    *
-   * @param looter the player the loot is for, if any. Stats lean towards their class, or a group member's.
+   * @param bonuses rarity and enchantment roll bonuses of the item's source: `LootSource.bonusesFor(creature)`
+   * for drops, `LootSource.bonusesForCrafting()` for crafted items.
+   * @param looter the player the item is for, if any. Stats lean towards their class, or a group member's.
    */
   createEnchantedItemFromItem(
     existingTemp: TSItemTemplate,
-    creature: TSCreature,
+    bonuses: LootSourceBonuses,
     looter?: TSPlayer
   ): TSItemTemplate | undefined {
     const newId = this.lastID + 1;
@@ -62,7 +64,7 @@ export class RandomItemGenerator {
     // so if this attempt rolls no enchantments, the next attempt can safely reuse the same (still unsaved) ID.
     const newTemplate = CreateItemTemplate(newId, existingTemp.GetEntry());
 
-    const quality = this.rollForQuality(existingTemp, creature);
+    const quality = this.rollForQuality(existingTemp, bonuses);
     newTemplate.SetQuality(quality);
 
     console.log(
@@ -80,7 +82,7 @@ export class RandomItemGenerator {
         classToRollFor === undefined ? "none (item type only)" : classToRollFor
       }.`
     );
-    if (this.attemptToGenEnchantments(newTemplate, creature, classToRollFor) == 0) {
+    if (this.attemptToGenEnchantments(newTemplate, bonuses, classToRollFor) == 0) {
       console.log(
         `createEnchantedItemFromItem: No enchantments added to item ${newTemplate.GetName()}.`
       );
@@ -100,17 +102,18 @@ export class RandomItemGenerator {
    * Randomly chooses enchantments, applies them to the template, and sets the item name accordingly.
    *
    * @param item `ItemTemplate` to which the enchantments and name will be applied.
+   * @param bonuses rarity and enchantment roll bonuses of the item's source.
    * @param classToRollFor class whose stat weights to use, or `undefined` for item-type affinities only.
    * @returns `number` - The amount of successfully added enchantments.
    */
   private attemptToGenEnchantments(
     item: TSItemTemplate,
-    creature: TSCreature,
+    bonuses: LootSourceBonuses,
     classToRollFor?: number
   ): number {
     const enchantGenResult = this.enchantManager.generateEnchantments(
       item,
-      creature,
+      bonuses,
       classToRollFor
     );
     const enchantsToAdd = enchantGenResult.enchantments;
@@ -258,21 +261,21 @@ export class RandomItemGenerator {
    * Potentially improves the quality of the item, up to Legendary.
    * Creatures of higher rank have a higher chance of getting better quality items. Dungeon bosses roll
    * with the boss bonuses, and other dungeon creatures can get extra bonuses (see `dungeonLootSettings`).
+   * Crafted items use `craftingSettings`.
    *
    * Becomes increasingly more difficult the higher the item's quality is.
    */
-  private rollForQuality(template: TSItemTemplate, creature: TSCreature): Item.Quality {
+  private rollForQuality(template: TSItemTemplate, bonuses: LootSourceBonuses): Item.Quality {
     let itemQuality = template.GetQuality();
     // Legendaries, artifacts, and heirlooms keep their rarity.
     if (itemQuality >= Item.Quality.LEGENDARY) return itemQuality;
 
     this.logger.debug("rollForQuality: starting...");
 
-    const creatureTemplate = creature.GetTemplate();
-    const rollMultiplier = LootSource.bonusesFor(creature).qualityRollMultiplier;
+    const rollMultiplier = bonuses.qualityRollMultiplier;
 
     this.logger.debug(
-      `rollForQuality: Creature rank = ${creatureTemplate.GetRank()}. Roll multiplier (rank and dungeon bonuses) = ${rollMultiplier}`
+      `rollForQuality: Roll multiplier (from the item's source) = ${rollMultiplier}`
     );
 
     let roll = Random.getRandomChance();
